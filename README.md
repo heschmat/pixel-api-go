@@ -18,7 +18,18 @@ When there's a valid `go.mod` file in the root of the project, it's a module.
 
 NOTE: `JSON` is just text. Hence, we can write a JSON response from a GO handler in the same way we'd write any other text responses: using `w.Write()`, `io.WriteString()` or one of the `fmt.Fprint` functions.
 
+### JSON encoding
+Go's `encoding/json` package:
+For the purpose of sending JSON in an HTTP response, using `json.Marshal()` is generally the better choice.
+It returns a JSON representation of the GO value in a `[]byte` slice.
+```go
+func Marshal(v any) ([]byte, error) {}
+```
 
+NOTE:
+- A `[]byte` slice is encoded to `Base64-encoded JSON string`, not a JSON array.
+- Go `time.Time` values - actually a struct behind the scenes - will be ecnoded to a formatted JSON string, and not as a JSON object.
+- Any pointer values will encode as the value pointed to.
 
 ## Makefile
 It contains _recipes_ for automating common administra
@@ -88,4 +99,11 @@ var buf bytes.Buffer
 fmt.Fprintf(&buf, "Hello %s!", "Alice")
 
 fmt.Println(buf.String())
+```
+
+### http
+```go
+http.NotFound(w, r)
+
+http.Error(w, "failed to marshal JSON", http.StatusInternalServerError)
 ```
