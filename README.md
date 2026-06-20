@@ -63,6 +63,28 @@ movie = data.Movie{
 movie = {"movie": movie}
 ```
 
+### advanced JSON customization
+
+So far: struct tags, adding whitespaces & enveloping the data. ✅
+
+For more advanced JSON customization, remember this is how Go handles `JSON encoding` behind the scenes:
+> When Go is encoding a particular type to JSON, it looks to see if the type satisfies the `json.Marshaler` interface. If it does, then Go will call the method, `MarshalJSON()`, to determine how to encode it, and use the `[]byte` slice that it returns as the encoded JSON value.
+
+```go
+type Marshaler interface {
+    MarshalJSON() ([]byte, error)
+}
+```
+Hence, to customize how sth is encoded, we need to implement a `MarshalJSON()` method on it, which returns a custom JSON representation of itself in a `[]byte` slice.
+
+For example, `time.Time` is actually a struct, but it has a `MarshalJSON()` method which outputs a string representation of itself.
+
+In our case, to customize the `Runtime` field, a clean and simple approach is to create a custom type specifically for the field, and implement a `MarshalJSON()` method on this custom type.
+The downside of having a _custom type_, when integrating our code with other packages, is that we may need to perform type conversions to change our custom type to and fro a value that other packages understand and accept.
+
+NOTE: as **Effective Go** mentions:
+> The rule about pointers vs. values for receivers is that: value methods can be invoked on pointers and values, but pointer methods can only be invoked on pointers.
+
 ## Makefile
 It contains _recipes_ for automating common administra
 
@@ -153,3 +175,6 @@ if err != nil {
     http.Error(w, "the server could not process your request", http.StatusInternalServerError)
 }
 ```
+
+### strconv
+`strconv.Atoi`, `strconv.Quote`, ``
