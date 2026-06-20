@@ -112,6 +112,19 @@ curl -i localhost:4000/v1/movies/19
 ### data
 Encapsulates ALL the custom data types for our project along with the logic for interacting with our database.
 
+
+## panic recovery
+
+This is what happens if there's a `runtime panic` in our handler code:
+1- Normal execution of the code in the handler will immediately stop.
+2- Any deferred functions for the current goroutine will be run in reverse order, LIFO.
+3- The panic will then be recovered by Go's `http.Server`, which will close the underlying HTTP connection.
+4- An error message and stack trace will be output to `http.Server.ErrorLog`.
+5- No other HTTP requests will be affected by the panic.
+
+HOWEVER, it'd be better to also send a `500 Internal Server Error` response to the client, rather than just closing the HTTP connection without providing any explanation.
+
+
 ## MiSK
 ```sh
 go install github.com/rakyll/hey@latest
@@ -178,3 +191,13 @@ if err != nil {
 
 ### strconv
 `strconv.Atoi`, `strconv.Quote`, ``
+
+### httprouter
+`httprouter` allows us to set our own custom error handlers. The handlers must satisfy the `http.Handler` interface.
+
+```go
+type Handler interface {
+ ServeHTTP(ResponseWriter, *Request)
+}
+```
+Hence, `http.HandlerFunc()` may be handy.

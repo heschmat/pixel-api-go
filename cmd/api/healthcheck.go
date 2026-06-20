@@ -28,12 +28,12 @@ func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
 		},
 	}
 
-	err := app.writeJSON(w, http.StatusOK, data, nil)
-	// if there's an error during the marshaling process,
-	// log the error and send a 500 Internal Server Error response to the client.
-	if err != nil {
-		app.logger.Error("failed to marshal JSON", "error", err)
-		http.Error(w, "failed to marshal JSON", http.StatusInternalServerError)
-		return
-	}
+	_ = app.writeJSON(w, http.StatusOK, data, nil)
+	// // if there's an error during the marshaling process,
+	// // log the error and send a 500 Internal Server Error response to the client.
+	// if err != nil {
+	// 	app.logger.Error("failed to marshal JSON", "error", err)
+	// 	http.Error(w, "failed to marshal JSON", http.StatusInternalServerError)
+	// 	return
+	// }
 }
