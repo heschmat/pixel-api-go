@@ -9,6 +9,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+type envelope map[string]any
+
 func (app *application) readIDParam(r *http.Request) (int, error) {
 	// params := httprouter.CleanPath(r.URL.Path)
 
@@ -25,8 +27,9 @@ func (app *application) readIDParam(r *http.Request) (int, error) {
 
 // headers: map[string][]string
 // containing any additional HTTP headers we want to include in the response.
-func (app *application) writeJSON(w http.ResponseWriter, status int, data any, headers http.Header) error {
-	js, err := json.Marshal(data)
+func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {
+	// js, err := json.Marshal(data)
+	js, err := json.MarshalIndent(data, "", "  ") // for pretty-printing the JSON output, indenting it with two spaces for better readability.
 	if err != nil {
 		return err
 	}

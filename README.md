@@ -31,6 +31,38 @@ NOTE:
 - Go `time.Time` values - actually a struct behind the scenes - will be ecnoded to a formatted JSON string, and not as a JSON object.
 - Any pointer values will encode as the value pointed to.
 
+### omitzero vs. omitempty (struct tags)
+
+Use `omitempty` if you want to omit empty slices or maps from the JSON entirely, instead of having them encode to an empty JSON array like `[]`.
+Otherwise, go with `omitzero`.
+
+### enveloping
+It's valuable to think about formatting upfrong and to maintain a clear and consistend response structure across your different API endpoints.
+
+enveloping: Including a key name (like "movie") at the top-level of the JSON.
+```go
+// cmd/api/helpers.go
+type envelope map[string]any
+
+// internal/data.go
+type Movie struct {
+	ID        int       `json:"id"`
+	Title     string    `json:"title"`
+	Runtime   int       `json:"runtime,omitzero"` // omit if value is zero
+	Genres    []string  `json:"genres,omitzero"`  // omit if value is empty
+}
+
+// cmd/api/movies.go
+movie = data.Movie{
+    ID:        id,
+    Title:     "Black Swan",
+    Runtime:   108,
+    Genres:    []string{"drama", "thriller"},
+}
+
+movie = {"movie": movie}
+```
+
 ## Makefile
 It contains _recipes_ for automating common administra
 
@@ -52,6 +84,11 @@ curl -v -I localhost:4000/v1/healthcheck
 # movies -----
 curl -i localhost:4000/v1/movies/19
 ```
+
+## internal
+
+### data
+Encapsulates ALL the custom data types for our project along with the logic for interacting with our database.
 
 ## MiSK
 ```sh
@@ -101,9 +138,18 @@ fmt.Fprintf(&buf, "Hello %s!", "Alice")
 fmt.Println(buf.String())
 ```
 
+```go
+fmt.Fprintf(w, "show movie with id %d", id)
+```
+
 ### http
 ```go
 http.NotFound(w, r)
 
-http.Error(w, "failed to marshal JSON", http.StatusInternalServerError)
+// -----
+err = app.writeJSON(w, http.StatusOK, movie, nil)
+if err != nil {
+    app.logger.Error(err.Error())
+    http.Error(w, "the server could not process your request", http.StatusInternalServerError)
+}
 ```
