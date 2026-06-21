@@ -179,6 +179,8 @@ go install github.com/rakyll/hey@latest
 # download the latest  v1.N.N release
 go get github.com/julienschmidt/httprouter@v1
 
+# download pq: a popular, reliable, and well-tested driver for PostgreSQL
+go get github.com/lib/pq@v1
 ```
 
 ### API versioning
