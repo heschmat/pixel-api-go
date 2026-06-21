@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -34,4 +35,24 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 		// http.Error(w, "the server could not process your request", http.StatusInternalServerError)
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
+	// declare an anonymous struct to hold the information. It's our *target decode destination*.
+	var input struct {
+		Title   string   `json:"title"`
+		Year    int      `json:"year"`
+		Runtime int      `json:"runtime"`
+		Genres  []string `json:"genres"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		// app.errResponse(w, r, err.Error(), http.StatusBadRequest)
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// dump the contents of the input struct in an HTTP response.
+	fmt.Fprintf(w, "%+v\n", input)
 }

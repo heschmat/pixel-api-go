@@ -85,6 +85,25 @@ The downside of having a _custom type_, when integrating our code with other pac
 NOTE: as **Effective Go** mentions:
 > The rule about pointers vs. values for receivers is that: value methods can be invoked on pointers and values, but pointer methods can only be invoked on pointers.
 
+## parse JSON requests
+
+To decode a JSON form from an HTTP request body, using `json.Decoder` is generally the best choice. (compared to `json.Unmarshal()`)
+
+```go
+// 📢 When calling `.Decode()`
+// we MUST pass a **non-nil pointer** as the target decode destination
+// OTHERWISE, it will return `json.InvalidUnmarshalError` error at runtime.
+// the struct fields MUST be exported (start with a capital letter), to be visible to `encoding/json` package.
+// any JSON key-value pairs which cannot be successfully mapped to the struct fields
+// - based on the struct tag names, will be silently ignored. Partial match is ok.
+// `http.Server` automatically closes `r.Body`
+err := json.NewDecoder(r.Body).Decode(&input)
+```
+
+Q: How can you tell the difference between a client not providing a key-value pair, and providing a key-value pair but deliberately setting it to its zero value?
+
+
+
 ## Makefile
 It contains _recipes_ for automating common administra
 
@@ -105,6 +124,16 @@ curl -v -I localhost:4000/v1/healthcheck
 
 # movies -----
 curl -i localhost:4000/v1/movies/19
+
+BODY='{"title":"Creed I","year":2015,"runtime":133,"genres":["Drama","Sport"]}'
+BODY='{"title":"The Matrix","year":1999,"runtime":136,"genres":["Action","Sci-Fi"]}'
+BODY='{"title":"Adore","year":2013,"runtime":111,"genres":["Drama","Romance"]}'
+BODY='{"title":"Black Swan","year":2010,"runtime":108,"genres":["Drama","Thriller"]}'
+BODY='{"title":"Whiplash","year":2014,"runtime":107,"genres":["Drama","Music"]}'
+BODY='{"title":"Nightcrawler","year":2014,"runtime":117,"genres":["Crime","Drama","Thriller"]}'
+BODY='{"title":"Her","year":2013,"runtime":126,"genres":["Drama","Romance","Sci-Fi"]}'
+
+curl -i -d "$BODY" localhost:4000/v1/movies
 ```
 
 ## internal
@@ -123,6 +152,24 @@ This is what happens if there's a `runtime panic` in our handler code:
 5- No other HTTP requests will be affected by the panic.
 
 HOWEVER, it'd be better to also send a `500 Internal Server Error` response to the client, rather than just closing the HTTP connection without providing any explanation.
+---
+## errors
+`errors.Is(err, target)` asks: is this error equal to this known value, maybe wrapped?
+```go
+// because io.EOF is a specific error value:
+errors.Is(err, io.EOF)
+```
+Use it for sentinel errors like `io.EOF`, `context.Canceled`, `sql.ErrNoRows`.
+
+`errors.As(err, &target)` asks: does this error contain a value of this type, maybe wrapped?
+```go
+// because json.SyntaxError is a type with useful info:
+var syntaxError *json.SyntaxError
+errors.As(err, &syntaxError)
+```
+Use it when you need fields/methods from the specific error type: `syntaxError.Offset`
+
+
 
 
 ## MiSK
@@ -175,6 +222,13 @@ fmt.Println(buf.String())
 
 ```go
 fmt.Fprintf(w, "show movie with id %d", id)
+
+// dump the contents of the input struct in an HTTP response.
+fmt.Fprintf(w, "%+v\n", input)
+
+// -----
+// with %w, it wraps another error:
+fmt.Errorf("read JSON: %w", err)
 ```
 
 ### http
