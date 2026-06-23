@@ -101,6 +101,7 @@ go get github.com/lib/pq@v1
 ```
 
 ## SQL migrations
+We're going to use `SQL migrations` to **manage database schema changes** throughout the project.
 To manage SQL migrations in this project, we're going to use the `migrate` command-line tool.
 
 ```sh
@@ -227,3 +228,12 @@ sudo -u postgres psql -c 'SHOW config_file;'
 #  /etc/postgresql/16/main/postgresql.conf
 # (1 row)
 ```
+
+### placeholder parameters
+In Postgres it's `$N`
+```sql
+INSERT INTO movies (title, runtime)
+VALUES ($1, $2)
+RETURNING id, created_at, version
+```
+Everytime we pass _untrusted_ input data from a client to a SQL database, it's important to use **placeholder parameters** to help prevent `SQL injection attacks`.

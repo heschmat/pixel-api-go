@@ -55,6 +55,10 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 	// decode the request body into the target destination.
 	err := json.NewDecoder(r.Body).Decode(dst)
+
+	// Triaging the Decoder error:
+	// at this point in our application build, the `.Decode()` method could potentially return
+	// the following types of error:
 	if err != nil {
 		var syntaxError *json.SyntaxError
 		var unmarshalTypeError *json.UnmarshalTypeError
@@ -64,11 +68,13 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 		case errors.Is(err, io.EOF):
 			return errors.New("body must not be empty")
 
+		// check if the error has the type `*json.SyntaxError`
 		case errors.As(err, &syntaxError):
 			return fmt.Errorf("body contains badly-formed JSON (at character %d)", syntaxError.Offset)
 		case errors.Is(err, io.ErrUnexpectedEOF):
 			return errors.New("body contains badly-formed JSON")
 
+		// these occur when the JSON value is the wrong type for the target destination, dst.
 		case errors.As(err, &unmarshalTypeError):
 			if unmarshalTypeError.Field != "" {
 				return fmt.Errorf("body contains incorrect JSON type for the field %q", unmarshalTypeError.Field)

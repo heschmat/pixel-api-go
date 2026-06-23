@@ -27,6 +27,10 @@ func (app *application) errResponse(w http.ResponseWriter, r *http.Request, errM
 	_ = app.writeJSON(w, statusCode, resp, nil)
 }
 
+// as our application grows, using specialist helpers like the followings
+// to manage different kinds of errors
+// will help ensure that our error messages remain consistent accross all our endpoints.
+
 func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.logError(r, err)
 

@@ -95,7 +95,7 @@ To decode a JSON form from an HTTP request body, using `json.Decoder` is general
 // OTHERWISE, it will return `json.InvalidUnmarshalError` error at runtime.
 // the struct fields MUST be exported (start with a capital letter), to be visible to `encoding/json` package.
 // any JSON key-value pairs which cannot be successfully mapped to the struct fields
-// - based on the struct tag names, will be silently ignored. Partial match is ok.
+// - based on the struct tag names, will be silently ignored.
 // `http.Server` automatically closes `r.Body`
 err := json.NewDecoder(r.Body).Decode(&input)
 ```
@@ -170,6 +170,16 @@ errors.As(err, &syntaxError)
 Use it when you need fields/methods from the specific error type: `syntaxError.Offset`
 
 
+## CRUD
+In this section:
+- How to create a **database model** that isolates all the logic for executing SQL queries against the database.
+
+- How to implement the basic CRUD operations on a specific resource in the context of an API.
+
+### setup the `movie` model
+It will encapsulate all the code for reading and writing movie data to and from our PostgreSQL database.
+
+We'll use `database/sql` package to execute our database queries, rather than using a 3rd-party `ORM`.
 
 
 ## MiSK
