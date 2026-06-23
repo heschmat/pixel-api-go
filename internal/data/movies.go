@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/lib/pq"
@@ -32,4 +33,61 @@ func (m MovieModel) Insert(movie Movie) (Movie, error) {
 	err := m.DB.QueryRow(q, args...).Scan(&movie.ID, &movie.CreatedAT, &movie.Version)
 
 	return movie, err
+}
+
+func (m MovieModel) Get(id int) (Movie, error) {
+	// avoid making unncessary database call
+	if id < 1 {
+		return Movie{}, ErrRecordNotFound
+	}
+
+	q := `SELECT id, created_at, title, year, runtime, genres, version
+	FROM movies
+	WHERE id = $1`
+
+	var movie Movie
+
+	err := m.DB.QueryRow(q, id).Scan(
+		&movie.ID,
+		&movie.CreatedAT,
+		&movie.Title,
+		&movie.Year,
+		&movie.Runtime,
+		pq.Array(&movie.Genres),
+		&movie.Version,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Movie{}, ErrRecordNotFound
+		} else {
+			return Movie{}, err
+		}
+	}
+
+	return movie, nil
+}
+
+func (m MovieModel) Delete(id int) error {
+	if id < 1 {
+		return ErrRecordNotFound
+	}
+
+	q := `DELETE FROM movies WHERE id = $1`
+
+	res, err := m.DB.Exec(q, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
+	return nil
 }

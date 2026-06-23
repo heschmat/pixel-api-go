@@ -1,9 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/heschmat/pixel-api-go/internal/data"
 )
@@ -17,16 +17,15 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// dummy data to test the handler
-	movie := data.Movie{
-		ID:        id,
-		CreatedAT: time.Now(),
-		Title:     "Black Swan",
-		Year:      2010,
-		Runtime:   108,
-		Genres:    []string{"drama", "thriller"},
-		// Genres:  []string{},
-		Version: 1,
+	movie, err := app.models.Movies.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"movie": movie}, nil)
@@ -80,4 +79,25 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 
 	// dump the contents of the input struct in an HTTP response.
 	fmt.Fprintf(w, "%+v\n", input)
+}
+
+func (app *application) deleteMovieHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	err = app.models.Movies.Delete(id)
+	if err != nil {
+		if errors.Is(err, data.ErrRecordNotFound) {
+			app.notFoundResponse(w, r)
+		} else {
+			app.serverErrorResponse(w, r, err)
+		}
+
+		return
+	}
+
+	_ = app.writeJSON(w, http.StatusOK, envelope{"message": "movie successfully delete"}, nil)
 }
