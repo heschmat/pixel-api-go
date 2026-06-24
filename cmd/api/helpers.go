@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -53,8 +54,18 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 }
 
 func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any) error {
-	// decode the request body into the target destination.
-	err := json.NewDecoder(r.Body).Decode(dst)
+	// limit the size of the request body to 1_048_576 bytes (1MB)
+	// every subsequent read from r.Body is constrained by this limit.
+	r.Body = http.MaxBytesReader(w, r.Body, 1_048_576)
+
+	// initialize the `json.Decoder`
+	dec := json.NewDecoder(r.Body)
+	// if the JSON from client includes any field that cannot be mapped to the target destination,
+	// the decoder will return an error instead of simply ignoring the field (default behavior).
+	dec.DisallowUnknownFields()
+
+	// decode the request body to the destination
+	err := dec.Decode(dst)
 
 	// Triaging the Decoder error:
 	// at this point in our application build, the `.Decode()` method could potentially return
@@ -63,6 +74,7 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 		var syntaxError *json.SyntaxError
 		var unmarshalTypeError *json.UnmarshalTypeError
 		var invalidUnmarshalError *json.InvalidUnmarshalError
+		var maxBytesError *http.MaxBytesError
 
 		switch {
 		case errors.Is(err, io.EOF):
@@ -81,6 +93,14 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 			}
 			return fmt.Errorf("body contains incorrect JSON type (at character %d)", unmarshalTypeError.Offset)
 
+		// if the JSON contains a field that cannot be mapped to the target destination:
+		case strings.HasPrefix(err.Error(), "json: unknown field"):
+			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field")
+			return fmt.Errorf("body contains unknown key %s", fieldName)
+
+		case errors.As(err, &maxBytesError):
+			return fmt.Errorf("body must NOT be larger than %d bytes", maxBytesError.Limit)
+
 		// happens if `dst` is NOT a non-nil pointer
 		case errors.As(err, &invalidUnmarshalError):
 			// as this should NEVER happen during normal user input; it is a programmer/configuration bug.
@@ -90,6 +110,12 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 		default:
 			return err
 		}
+	}
+
+	// call .Decode() again, using a pointer to **an empty anonymous struct** as the destination.
+	err = dec.Decode(&struct{}{})
+	if !errors.Is(err, io.EOF) {
+		return errors.New("body must contain a single JSON value only")
 	}
 
 	return nil

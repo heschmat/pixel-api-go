@@ -102,6 +102,9 @@ err := json.NewDecoder(r.Body).Decode(&input)
 
 Q: How can you tell the difference between a client not providing a key-value pair, and providing a key-value pair but deliberately setting it to its zero value?
 
+### .Decode()
+
+`json.Decode()` is designed to support **streams of JSON data**. So, on each call to `.Decode()` it reads just one json value ...
 
 
 ## Makefile
@@ -255,8 +258,10 @@ if err != nil {
 }
 ```
 
-### strconv
+### str
 `strconv.Atoi`, `strconv.Quote`, ``
+
+`strings.HasPrefix(,)`, `strings.TrimPrefix(,)`, ``
 
 ### httprouter
 `httprouter` allows us to set our own custom error handlers. The handlers must satisfy the `http.Handler` interface.
@@ -267,3 +272,11 @@ type Handler interface {
 }
 ```
 Hence, `http.HandlerFunc()` may be handy.
+
+### extras
+Make a request with a very large JSON body:
+```sh
+wget -O /tmp/largefile.json https://www.alexedwards.net/static/largefile.json
+
+curl -d @/tmp/largefile.json localhost:4000/v1/movies
+```
