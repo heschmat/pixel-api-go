@@ -101,3 +101,67 @@ func (app *application) deleteMovieHandler(w http.ResponseWriter, r *http.Reques
 
 	_ = app.writeJSON(w, http.StatusOK, envelope{"message": "movie successfully delete"}, nil)
 }
+
+func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Request) {
+	// extract the movie ID from the URL path
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	// fetch the movie with the above id
+	movie, err := app.models.Movies.Get(id)
+	if err != nil {
+		if errors.Is(err, data.ErrRecordNotFound) {
+			app.notFoundResponse(w, r)
+		} else {
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// holds the expected data from the client
+	// N.B. if a field is `nil` after parsing JSON,
+	// we'd know no corresponding key-value pair was provided in the JSON request body.
+	var input struct {
+		Title   *string  `json:"title"`
+		Year    *int     `json:"year"`
+		Runtime *int     `json:"runtime"`
+		Genres  []string `json:"genres"` // slices already have the zero-value nil
+	}
+
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		app.logger.Warn("oops")
+		return
+	}
+
+	if input.Title != nil {
+		movie.Title = *input.Title
+	}
+	if input.Year != nil {
+		movie.Year = *input.Year
+	}
+	if input.Runtime != nil {
+		movie.Runtime = data.Runtime(*input.Runtime)
+	}
+	if input.Genres != nil {
+		movie.Genres = input.Genres // no need to "dereference" a slice
+	}
+
+	//@TODO: validate
+
+	// update
+	movie, err = app.models.Movies.Update(movie)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"movie": movie}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

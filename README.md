@@ -137,6 +137,11 @@ BODY='{"title":"Nightcrawler","year":2014,"runtime":117,"genres":["Crime","Drama
 BODY='{"title":"Her","year":2013,"runtime":126,"genres":["Drama","Romance","Sci-Fi"]}'
 
 curl -i -d "$BODY" localhost:4000/v1/movies
+
+curl -i -X PUT \
+  -H "Content-Type: application/json" \
+  -d "$BODY" \
+  localhost:4000/v1/movies/2
 ```
 
 ## internal
