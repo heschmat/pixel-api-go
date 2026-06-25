@@ -189,6 +189,27 @@ It will encapsulate all the code for reading and writing movie data to and from 
 
 We'll use `database/sql` package to execute our database queries, rather than using a 3rd-party `ORM`.
 
+### optimistic concurrency control
+
+> It's good to get into the habit of thinking about **race conditions** whenever we write code. No matter how innocuous they might seem, we need to either manage them or entirely avoid them.
+
+If two `goroutines` are updating a movie record at the same time, we want the first update to succeed, and the second fail. This happens because we "lock" the version number and expect to be the same before we update.
+
+To actually test optimistic locking, run the requests in parallel:
+```sh
+printf '%s\n' {1..6} | xargs -n1 -P6 -I{} curl -s -X PATCH \
+  -d '{"year": 2015}' \
+  "localhost:4000/v1/movies/2"
+
+# or
+for i in {1..6}; do
+  curl -s -X PATCH -d '{"year": 2015}' "localhost:4000/v1/movies/2" &
+done
+wait
+
+```
+
+NOTE: using an incrementing integer `version` number as the basis for an optimistic lock is safe and computationally cheap. I'd recommend using this approach - in comparision to `last_updated` or others - unless you have a specific reason not to.
 
 ## MiSK
 ```sh

@@ -50,3 +50,8 @@ func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.errResponse(w, r, err.Error(), http.StatusBadRequest)
 }
+
+func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
+	msg := "unable to update the record due to an edit conflict. please try again"
+	app.errResponse(w, r, msg, http.StatusConflict)
+}

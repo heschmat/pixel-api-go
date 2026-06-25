@@ -93,9 +93,12 @@ func (m MovieModel) Delete(id int) error {
 }
 
 func (m MovieModel) Update(movie Movie) (Movie, error) {
+	// in the WHERE clause: we look for a record with a specific ID & a specific version number
+	// if no movie with the combined conditin (specified ID & version) is not found anymore
+	// it shows that the record has been modified since we've fetched it (updated or even deleted)
 	q := `UPDATE movies
 	SET title = $1, year = $2, runtime = $3, genres = $4, version = version + 1
-	WHERE id = $5
+	WHERE id = $5 AND version = $6
 	RETURNING version`
 
 	args := []any{
@@ -104,8 +107,18 @@ func (m MovieModel) Update(movie Movie) (Movie, error) {
 		movie.Runtime,
 		pq.Array(movie.Genres),
 		movie.ID,
+		movie.Version,
 	}
 
 	err := m.DB.QueryRow(q, args...).Scan(&movie.Version)
-	return movie, err
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return Movie{}, ErrEditConflict
+		default:
+			return Movie{}, err
+		}
+	}
+
+	return movie, nil
 }
