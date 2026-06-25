@@ -1,8 +1,10 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/lib/pq"
@@ -121,4 +123,61 @@ func (m MovieModel) Update(movie Movie) (Movie, error) {
 	}
 
 	return movie, nil
+}
+
+func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]Movie, error) {
+	// q := `SELECT id, created_at, title, year, runtime, genres, version
+	// FROM movies
+	// WHERE (title ILIKE '%' || $1 || '%' OR $1 = '')
+	// AND (genres @> $2::text[] OR $2 = '{}')
+	// ORDER BY id`
+
+	// ⚠️ Important detail: because this query goes through `fmt.Sprintf`,
+	// the literal `%` signs in `ILIKE` need to become `%%`
+	// Otherwise fmt.Sprintf treats % as formatting syntax.
+	q := fmt.Sprintf(`SELECT id, created_at, title, year, runtime, genres, version
+	FROM movies
+	WHERE (title ILIKE '%%' || $1 || '%%' OR $1 = '')
+	AND (genres @> $2::text[] OR $2::text[] = '{}')
+	ORDER BY %s %s, id ASC
+	LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []any{title, pq.Array(genres), filters.limit(), filters.offset()}
+
+	rows, err := m.DB.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	movies := []Movie{}
+
+	for rows.Next() {
+		var movie Movie
+
+		err := rows.Scan(
+			&movie.ID,
+			&movie.CreatedAT,
+			&movie.Title,
+			&movie.Year,
+			&movie.Runtime,
+			pq.Array(&movie.Genres),
+			&movie.Version,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		movies = append(movies, movie)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return movies, nil
 }

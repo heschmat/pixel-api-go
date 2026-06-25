@@ -135,6 +135,11 @@ BODY='{"title":"Black Swan","year":2010,"runtime":108,"genres":["Drama","Thrille
 BODY='{"title":"Whiplash","year":2014,"runtime":107,"genres":["Drama","Music"]}'
 BODY='{"title":"Nightcrawler","year":2014,"runtime":117,"genres":["Crime","Drama","Thriller"]}'
 BODY='{"title":"Her","year":2013,"runtime":126,"genres":["Drama","Romance","Sci-Fi"]}'
+BODY='{"title":"Game Night","year":2018,"runtime":100,"genres":["Action","Comedy","Crime"]}'
+BODY='{"title":"Before Midnight","year":2013,"runtime":109,"genres":["Drama","Romance"]}'
+BODY='{"title":"The Dark Knight","year":2008,"runtime":152,"genres":["Action","Crime","Drama"]}'
+BODY='{"title":"Nightmare Alley","year":2021,"runtime":150,"genres":["Crime","Drama","Thriller"]}'
+BODY='{"title":"Two Night Stand","year":2014,"runtime":86,"genres":["Comedy","Romance"]}'
 
 curl -i -d "$BODY" localhost:4000/v1/movies
 
@@ -210,6 +215,12 @@ wait
 ```
 
 NOTE: using an incrementing integer `version` number as the basis for an optimistic lock is safe and computationally cheap. I'd recommend using this approach - in comparision to `last_updated` or others - unless you have a specific reason not to.
+
+## filtering, sorting & pagination
+
+```sh
+curl -i "localhost:4000/v1/movies?title=night&genres=Drama&page=1&page_size=4&sort=-year"
+```
 
 ## MiSK
 ```sh

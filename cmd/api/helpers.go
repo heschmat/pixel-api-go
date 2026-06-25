@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -119,4 +120,46 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 	}
 
 	return nil
+}
+
+// parsing query string -----
+// func (app *application) readString(qs url.Values, key string, defaultValue string) string {
+// 	s := qs.Get(key)
+// 	if s == "" {
+// 		return defaultValue
+// 	}
+
+// 	return s
+// }
+
+func (app *application) readString(qs url.Values, key, defaultValue string) string {
+	// 👉 This keeps the scope of s limited to the if statement & removes the extra blank line/assignment.
+	if s := qs.Get(key); s != "" {
+		return s
+	}
+
+	return defaultValue
+}
+
+func (app *application) readCSV(qs url.Values, key string, defaultValue []string) []string {
+	csv := qs.Get(key)
+	if csv == "" {
+		return defaultValue
+	}
+
+	values := strings.Split(csv, ",")
+	for i := range values {
+		values[i] = strings.TrimSpace(values[i])
+	}
+
+	return values
+}
+
+func (app *application) readInt(qs url.Values, key string, defaultValue int) int {
+	if s := qs.Get(key); s != "" {
+		if i, err := strconv.Atoi(s); err == nil {
+			return i
+		}
+	}
+	return defaultValue
 }
