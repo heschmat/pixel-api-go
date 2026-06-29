@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/heschmat/pixel-api-go/internal/data"
+	"github.com/heschmat/pixel-api-go/internal/validator"
 )
 
 func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,6 +63,15 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 		Year:    input.Year,
 		Runtime: data.Runtime(input.Runtime),
 		Genres:  input.Genres,
+	}
+
+	// initialize a new validator
+	v := validator.New()
+
+	// if any checks fail, return a 422 Unprocessable Entity response containing the errors
+	if data.ValidateMovie(v, &movie); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
 	}
 
 	movie, err = app.models.Movies.Insert(movie)
@@ -151,7 +161,14 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 		movie.Genres = input.Genres // no need to "dereference" a slice
 	}
 
-	//@TODO: validate
+	// initialize a new validator
+	v := validator.New()
+
+	// if any checks fail, return a 422 Unprocessable Entity response containing the errors
+	if data.ValidateMovie(v, &movie); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
 
 	// update
 	movie, err = app.models.Movies.Update(movie)

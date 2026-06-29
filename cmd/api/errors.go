@@ -15,7 +15,7 @@ func (app *application) logError(r *http.Request, err error) {
 }
 
 // helper func to send a JSON-formatted error message to the client
-func (app *application) errResponse(w http.ResponseWriter, r *http.Request, errMsg string, statusCode int) {
+func (app *application) errResponse(w http.ResponseWriter, r *http.Request, errMsg any, statusCode int) {
 	resp := envelope{"error": errMsg}
 
 	// err := app.writeJSON(w, statusCode, resp, nil)
@@ -54,4 +54,8 @@ func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Reques
 func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
 	msg := "unable to update the record due to an edit conflict. please try again"
 	app.errResponse(w, r, msg, http.StatusConflict)
+}
+
+func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
+	app.errResponse(w, r, errors, http.StatusUnprocessableEntity)
 }
